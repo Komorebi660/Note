@@ -8,6 +8,7 @@
   - [压缩](#压缩)
   - [Vim](#vim)
   - [Git](#git)
+  - [其他](#其他)
   - [关于`Windows`命令行](#关于windows命令行)
 
 ## 查询文件占用空间
@@ -127,6 +128,10 @@ git merge origin/main
 # reduce .git size
 git gc --prune=now
 ```
+
+## 其他
+
+在脚本中添加``` cd `dirname $0` ```可以直接定位到脚本所在目录，这样就不用关心在什么位置执行脚本了。
 
 ## 关于`Windows`命令行
 
