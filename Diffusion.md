@@ -14,6 +14,8 @@
   - [Conditional Diffusion Model](#conditional-diffusion-model)
     - [Classifier-Guidance](#classifier-guidance)
     - [Classifier-Free](#classifier-free)
+  - [CLIP](#clip)
+  - [DALL·E 2](#dalle-2)
   - [Reference](#reference)
 
 常见的生成模型包含[GAN](http://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)、[VAE](https://arxiv.org/abs/1312.6114)、[Flow Models](https://proceedings.mlr.press/v97/ho19a.html)等等, 所谓生成模型, 就是给一组随机噪声, 通过某种概率模型下的变换, 输出一些具有一定语义信息的数据(比如图像、文本等)。Diffusion Model也是一种生成模型, 2020年[DDPM](https://hojonathanho.github.io/diffusion/)的发表使得图像生成领域的很多工作都开始转向Diffusion Model。
@@ -248,6 +250,37 @@ $$ \tilde{\epsilon_\theta}(x_t, t, y) = (1+w)\epsilon_\theta(x_t, t, y) - w\epsi
 
 其中 $w$ 是类似 $\gamma$ 的调节因子。 $\tilde{\epsilon_\theta}$ 包含conditional和unconditional两部分，在训练时我们以一定概率将 $y$ 置为 None 来训练unconditional的部分，在采样时用 $\tilde{\epsilon_\theta}$ 替换原来的 $\epsilon_\theta$ 计算。
 
+## CLIP
+
+[CLIP](https://arxiv.org/abs/2103.00020) (Constastive Language-Image Pretraining) 是一个多模态预训练的算法，它连接了图像与文本，提供一张图像和一段文本描述，该模型可以预测与该图像最相关的文本描述，而不需要为某个特定任务进行优化。该模型的架构如下：
+
+<div align=center>
+<img src="./figs/clip.png" width=90%/>
+</div>
+</br>
+
+在训练时，将 $N$ 个 <文本，图像> 对作为输入，其中文本信息通过text encoder (如Transformer) 编码为 $N \times d$ 的向量，图像信息通过image encoder (如ResNet，Vision Transformer) 编码为 $N \times d$ 的向量，然后计算文本向量与图像向量的内积得到 $N \times N$ 矩阵，此时对角线上的元素表示输入的 $N$ 个 <文本，图像> 对的相似度。我们希望对角线上的元素最大化，其余元素最小化，这可以通过交叉熵进行优化。
+
+在预测时，我们提供一组文本描述，通过text encoder得到文本向量，然后给定一张图像，通过image encoder得到图片向量，最后计算文本向量与所有文本向量的内积，选择内积最大的文本(也即最相似)作为预测结果。
+
+CLIP是一个zero-shot的图片分类器，这意味着不用额外训练就可以分类任意类别的图片。
+
+## DALL·E 2
+
+[DALL·E 2](https://arxiv.org/abs/2204.06125) 是一个基于CLIP和diffusion的文本到图片的生成模型。它的架构如下：
+
+<div align=center>
+<img src="./figs/dalle2.png" width=90%/>
+</div>
+</br>
+
+它主要包括三个部分：CLIP，prior和decoder。DALL·E 2将三个子模块分开训练，最后将这些训练好的子模块拼接在一起。训练过程如下：
+- 第一步，训练CLIP，得到一个文本编码器和一个图像编码器。训练过程与标准的CLIP训练过程一致。
+- 第二步，训练prior，使得其可以根据输入到text embedding生成图片embedding。具体来说，将CLIP中训练好的text encoder拿出来，输入文本 $y$ , 得到文本编码 $z_t$ ; 将CLIP中训练好的image encoder拿出来，输入图像 $x$ , 得到图像编码 $z_i$ . 假设 $z_t$ 经过prior输出的特征为 $z_i^{\prime}$ , 那么我们自然希望 $z_i^{\prime}$ 与 $z_i$ 越接近越好，以此来更新prior模块。prior可以是Autoregressive model也可以是conditional diffusion model.
+- 第三步，训练decoder, 使得其根据图像编码 $z_i$ 还原出图片 $x$ . 具体来说，将CLIP中训练好的image encoder拿出来，输入图像 $x$ , 得到图像编码 $z_i$ , 将 $z_i$ 送入到decoder中得到图片 $x^{\prime}$ , 我们希望 $x^{\prime}$ 与 $x$ 的特征尽量接近。论文中使用的decoder是conditional diffusion model.
+
+在做推理时，给定一个文本 $y$ , 通过CLIP text encoder得到文本向量 $z_t$ , 然后通过prior得到图像向量 $z_i$ , 最后通过decoder得到图片 $x$ .
+
 ## Reference
 
 - [Diffusion Models：生成扩散模型](https://zhuanlan.zhihu.com/p/549623622)
@@ -255,3 +288,5 @@ $$ \tilde{\epsilon_\theta}(x_t, t, y) = (1+w)\epsilon_\theta(x_t, t, y) - w\epsi
 - [生成扩散模型(一): 基础 (Generative Diffusion Model: Basic)](https://www.jarvis73.com/2022/08/08/Diffusion-Model-1/)
 - [生成扩散模型漫谈（九）：条件控制生成结果](https://spaces.ac.cn/archives/9257)
 - [基于扩散模型的文本引导图像生成算法](https://blog.csdn.net/c9yv2cf9i06k2a9e/article/details/124641910)
+- [AIGC 神器 CLIP：技术详解及应用示例](https://xie.infoq.cn/article/f7680d1fe54f4a0e2db7acbd3)
+- [DALL·E 2 解读 | 结合预训练CLIP和扩散模型实现文本-图像生成](https://blog.csdn.net/zcyzcyjava/article/details/126992705)
