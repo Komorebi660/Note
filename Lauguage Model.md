@@ -14,6 +14,7 @@
     - [Self-Attention](#self-attention)
     - [Encoder](#encoder)
     - [Decoder](#decoder)
+  - [LoRa](#lora)
   - [Reference](#reference)
 
 ## Two kinds of Models
@@ -254,6 +255,27 @@ $$Y = LayerNorm(X_2 + \mathbf{MultiHeadAttention}(C, X_2))$$
 
 $$Z = LayerNorm(Y + \mathbf{FeedForward}(Y))$$
 
+## LoRa
+
+[LoRA](https://link.zhihu.com/?target=https%3A//arxiv.org/abs/2106.09685) (Low-Rank Adaptation of Large Language Models)，即大语言模型的低阶适应，是一种高效完成大语言模型微调的方法。LoRA的核心思想是将大语言模型的参数分解为两个矩阵的乘积，其中一个矩阵是低秩的，另一个矩阵是高秩的。**低秩**矩阵可以被视为一个**通用的语言模型** (Pre-trained Model, 下图中的 $W$ )，而**高秩**矩阵可以被视为一个**特定任务的适应模型** (下图中的 $A, B$ )。
+
+<div align=center>
+<img src="./figs/lora.png" width=40%/>
+</div>
+</br>
+
+在微调训练 (fine-tuning) 时固定预训练 (Pre-trained) 的结果 $W \in \mathbb{R}^{d \times d}$ , 只更新 $A \in \mathbb{R}^{d \times r} , B \in \mathbb{R}^{r \times d}$ 。用随机高斯分布初始化 $A$ ，用 $0$ 矩阵初始化 $B$ . 具体来说可表示为：
+
+$$W + \Delta W = W + B \times A $$
+
+由于 $r \ll d$ ，因此需要更新的参数量 $2rd$ 远小于原始模型的参数量 $d^2$ ，从而大大减少了微调的时间和计算成本。
+
+在前向推理时，LoRA可以不引入推理延迟，只需要将预训练模型参数 $W$ 与LoRA参数 $A, B$ 进行合并即可得到微调后的模型参数: $W + B \times A$ , 因此前向过程可表述为：
+
+$$h = (W + B \times A)x $$
+
+微调以Transformer为基础的大语言模型时，可以对 $W_Q, W_K, W_V$ 矩阵应用LoRa技术，在获得不错效果同时减少微调成本。
+
 ## Reference
 
 - [BLEU值](https://www.cnblogs.com/duye/p/10680058.html)
@@ -261,3 +283,4 @@ $$Z = LayerNorm(Y + \mathbf{FeedForward}(Y))$$
 - [Seq2Seq 模型详解](https://www.jianshu.com/p/80436483b13b)
 - [Attention 图解](https://zhuanlan.zhihu.com/p/342235515)
 - [Transformer 模型详解](https://zhuanlan.zhihu.com/p/48508221)
+- [LoRa 简读](https://zhuanlan.zhihu.com/p/514033873)
