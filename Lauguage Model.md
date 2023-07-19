@@ -16,7 +16,7 @@
     - [Self-Attention](#self-attention)
     - [Encoder](#encoder)
     - [Decoder](#decoder)
-  - [LoRa](#lora)
+  - [LoRA](#lora)
   - [Vision Transformer](#vision-transformer)
   - [Reference](#reference)
 
@@ -272,7 +272,7 @@ $$Y = LayerNorm(X_2 + \mathbf{MultiHeadAttention}(C, X_2))$$
 
 $$Z = LayerNorm(Y + \mathbf{FeedForward}(Y))$$
 
-## LoRa
+## LoRA
 
 [LoRA](https://link.zhihu.com/?target=https%3A//arxiv.org/abs/2106.09685) (Low-Rank Adaptation of Large Language Models)，即大语言模型的低阶适应，是一种高效完成大语言模型微调的方法。LoRA的核心思想是将大语言模型的参数分解为两个矩阵的乘积，其中一个矩阵是低秩的，另一个矩阵是高秩的。**低秩**矩阵可以被视为一个**通用的语言模型** (Pre-trained Model, 下图中的 $W$ )，而**高秩**矩阵可以被视为一个**特定任务的适应模型** (下图中的 $A, B$ )。
 
@@ -291,7 +291,7 @@ $$W + \Delta W = W + B \times A $$
 
 $$h = (W + B \times A)x $$
 
-微调以Transformer为基础的大语言模型时，可以对 $W_Q, W_K, W_V$ 矩阵应用LoRa技术，在获得不错效果同时减少微调成本。
+微调以Transformer为基础的大语言模型时，可以对 $W_Q, W_K, W_V$ 矩阵应用LoRA技术，在获得不错效果同时减少微调成本。
 
 ## Vision Transformer
 
