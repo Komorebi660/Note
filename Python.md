@@ -348,6 +348,14 @@ s: 标记大小
 alpha: 透明度
 """
 
+#画直方图
+plt.hist(data, bins=100, facecolor="#99CCFF", edgecolor="black")
+"""
+bins: 多少根柱子
+facecolor: 填充颜色
+edgecolor: 边缘颜色
+"""
+
 #画柱状图
 num_of_algo = 3     #参与绘图的算法数目
 num_of_data = 5     #数据数目
