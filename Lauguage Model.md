@@ -5,8 +5,9 @@
     - [Autoregressive Language Model](#autoregressive-language-model)
     - [Autoencoding Language Model](#autoencoding-language-model)
   - [BLEU](#bleu)
-  - [TF-IDF](#tf-idf)
-  - [BM25](#bm25)
+  - [基于词的评价文档间相关性的指标](#基于词的评价文档间相关性的指标)
+    - [TF-IDF](#tf-idf)
+    - [BM25](#bm25)
   - [RNN](#rnn)
   - [Seq2Seq](#seq2seq)
   - [Attention](#attention)
@@ -15,6 +16,7 @@
     - [Encoder](#encoder)
     - [Decoder](#decoder)
   - [LoRa](#lora)
+  - [Vision Transformer](#vision-transformer)
   - [Reference](#reference)
 
 ## Two kinds of Models
@@ -56,7 +58,9 @@ $$\mathbf{BLEU} = \exp \left(\sum_{n=1}^4 score_n \right)$$
 
 最大时四个 $score$ 均为 $1$ , $\mathbf{BLEU}_{max} = e^4 \approx 54.598$ .
 
-## TF-IDF
+## 基于词的评价文档间相关性的指标
+
+### TF-IDF
 
 它是一种判别一个词在文章中的**重要程度**的指标，其计算方式如下:
 
@@ -65,7 +69,7 @@ $$\mathbf{BLEU} = \exp \left(\sum_{n=1}^4 score_n \right)$$
 - 计算逆文档频率 $idf = \log \frac{语料库的文章总数}{语料库中包含该词的文章数 + 1}$ , 如果一个词越常见, 那么说明它越不重要, 此时 $idf$ 值越小；
 - `tf-idf` $= tf \times idf$ .
 
-## BM25
+### BM25
 
 它是一种用来评价**搜索词和文档之间相关性**的算法，基于概率检索模型提出。给定查询 $q$ (查询中第 $i$ 个词为 $q_i$ ) 和文档 $d$ (语料库中总共有 $N$ 篇文章, $d$ 是其中任意一篇)，其计算方式如下:
 
@@ -276,6 +280,17 @@ $$h = (W + B \times A)x $$
 
 微调以Transformer为基础的大语言模型时，可以对 $W_Q, W_K, W_V$ 矩阵应用LoRa技术，在获得不错效果同时减少微调成本。
 
+## Vision Transformer
+
+[ViT](https://arxiv.org/abs/2010.11929) (Vision Transformer) 是将Transformer应用在视觉领域的例子，其结构如下图所示。
+
+<div align=center>
+<img src="./figs/vit.png" width=80%/>
+</div>
+</br>
+
+其基本思想是对输入图片分块，展平成一维向量后通过一个线性层压缩，然后和位置向量一起送入transformer encoder中，最后通过一个MLP得到分类结果。由于ViT中只有encoder，因此额外添加一个可学习的class embedding作为输入，在encoder输出时选取这一个向量对应的输出作为MLP的输入，完成分类计算。
+
 ## Reference
 
 - [BLEU值](https://www.cnblogs.com/duye/p/10680058.html)
@@ -284,3 +299,4 @@ $$h = (W + B \times A)x $$
 - [Attention 图解](https://zhuanlan.zhihu.com/p/342235515)
 - [Transformer 模型详解](https://zhuanlan.zhihu.com/p/48508221)
 - [LoRa 简读](https://zhuanlan.zhihu.com/p/514033873)
+- [Vision Transformer](https://zhuanlan.zhihu.com/p/317756159)
