@@ -15,6 +15,7 @@
   - [pytorch](#pytorch)
   - [Matplotlib](#matplotlib)
   - [Faker](#faker)
+  - [FAISS](#faiss)
 
 ## data load & store
 
@@ -417,4 +418,48 @@ from faker import Faker
 
 fake = Faker()
 location_list = [fake.country() for _ in range(200)]
+```
+
+## FAISS
+
+install:
+
+```bash
+pip install faiss-gpu [or faiss-cpu]
+```
+
+usage:
+
+```python
+import faiss
+
+def build_index(data):
+    data_num, data_dim = data.shape
+
+    index = faiss.IndexFlatL2(data_dim)     # L2 norm
+    #index = faiss.IndexFlatIP(data_dim)    # inner product
+    
+    # use GPU
+    res = faiss.StandardGpuResources()
+    index = faiss.index_cpu_to_gpu(res, 0, index)
+    
+    # build index
+    index.add(data)
+    assert index.ntotal == data_num
+
+    # save index
+    index_cpu = faiss.index_gpu_to_cpu(index)
+    faiss.write_index(index_cpu, 'index_xxx')
+
+def search(query):
+    query_num, query_dim = data.shape
+
+    index = faiss.read_index('index_xxx')
+    res = faiss.StandardGpuResources()
+    index = faiss.index_cpu_to_gpu(res, 0, index)
+    D, I = index.search(query, 100) # search top-100
+
+    for i in range(query_num):
+        results = I[i]
+        # results[0:99] are top-100 ids
 ```
