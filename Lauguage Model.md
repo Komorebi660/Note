@@ -1,13 +1,14 @@
 # Language Model
 
 - [Language Model](#language-model)
-  - [Two kinds of Models](#two-kinds-of-models)
-    - [Autoregressive Language Model](#autoregressive-language-model)
-    - [Autoencoding Language Model](#autoencoding-language-model)
   - [BLEU](#bleu)
   - [基于词的评价文档间相关性的指标](#基于词的评价文档间相关性的指标)
     - [TF-IDF](#tf-idf)
     - [BM25](#bm25)
+  - [NLP模型](#nlp模型)
+    - [n-gram模型](#n-gram模型)
+    - [Autoregressive Language Model](#autoregressive-language-model)
+    - [Autoencoding Language Model](#autoencoding-language-model)
   - [RNN](#rnn)
   - [Seq2Seq](#seq2seq)
   - [Attention](#attention)
@@ -18,20 +19,6 @@
   - [LoRa](#lora)
   - [Vision Transformer](#vision-transformer)
   - [Reference](#reference)
-
-## Two kinds of Models
-
-### Autoregressive Language Model
-
-自回归模型即在给定之前的所有token, 输出下一个token是什么(指利用上文信息或者下文信息), 是单向的。给定源语句 $(x_1, \cdots, x_m)$ , 目标语句 $(y_1, \cdots, y_n)$ 是按照如下的方式生成的:
-
-$$p(y|x) = \prod_{t}{p(y_t|y_{\lt t},x)}$$
-
-$t$ 是当前的时刻,  $y_{\lt t}$ 是当前时刻已经生成的token, 由于前后的依赖关系, AR模型的生成往往需要 $O(n)$ 次循环。AR模型适合用于自然语言生成(NLG)任务。GPT是典型的自回归模型, 缺点是生成速度慢, non-autoregressive模型就是想要减少生成时的循环次数。
-
-### Autoencoding Language Model
-
-自编码模型是把输入token打乱, 学习出一个中间表示(隐空间), 再用这个中间表示还原出原始的序列。BERT作为典型的AE模型就是通过mask掉一部分token, 再重建恢复原始序列。AE模型能较好地编码上下文信息, 因此擅长自然语言理解(NLU)的任务。
 
 ## BLEU
 
@@ -77,6 +64,32 @@ $$\mathbf{BLEU} = \exp \left(\sum_{n=1}^4 score_n \right)$$
 - 计算单词与文档的相关性。`BM25`的设计依据一个重要的发现：词频和相关性之间的关系是**非线性**的，也就是说，每个词对于文档的相关性分数不会超过一个特定的阈值，当词出现的次数达到一个阈值后，其影响就不在线性增加了，而这个阈值会跟文档本身有关。因此，在刻画单词与文档相似性时，`BM25`是这样设计的： $S(q_i, d) = \frac{(k_1+1)tf_{id}}{k_1(1-b+b*\frac{L_d}{L_{avg}}) + tf_{id}}$ 其中, $tf_{id}$ 是单词 $q_i$ 在文章 $d$ 中出现的次数(标准化后), $L_d$ 是文章 $d$ 的长度, $L_{avg}$ 是语料库中所有文章的平均长度, $k_1$ 和 $b$ 是两个超参数, 分别用于标准化文章词频的范围以及调节使用文档长度来表示信息量的权重，实际应用中一般取 $k_1=1.2 \sim 2, b=0.75$ ；
 - 计算单词与查询的相关性。 $R(q_i, q) = \frac{(k_3+1)tf_{iq}}{k_3+tf_{iq}}$ 其中, $tf_{iq}$ 是单词 $q_i$ 在查询 $q$ 中出现的次数(标准化后), $k_3$ 是一个超参数，用于标准化查询中词频的范围，实际应用中一般取 $k_3=1.2 \sim 2$ .
 - $BM25(q_i, q, d)=idf(q_i) \times S(q_i, d) \times R(q_i, q)$
+
+**上述评价指标只考虑了单个词，进一步还可以将单词替换为多个单词组成的词组，更准确地评价相似度。**
+
+## NLP模型
+
+### n-gram模型
+
+我们知道，在一个句子中，当前词只与前面的词相关，如果有一个由 $m$ 个词 $w_1, w_2, \cdots, w_m$ 组成的句子，我们希望计算概率 $P(w_1, w_2, \cdots ,w_m)$ , 根据链式规则，可得:
+
+$$P(w_1,w_2,\cdots,w_m)=P(w_1)P(w_2|w_1)P(w_3|w_1,w_2) \cdots P(w_m|w_1,\cdots,w_{m−1})$$
+
+显然，这么计算代价太大，因此我们考虑隐式马尔科夫链的假设，即当前这个词的概率仅仅跟前面 $n$ 个词相关，这就是所谓的n-gram模型。此时, $P(w_i|w_1,\cdots,w_{i−1}) = P(w_i|w_{i-n+1},\cdots,w_{i−1})$ 大幅减少了计算的复杂度。
+
+我们可以通过训练模型学习这一概率分布，使得训练样本的 $P(w_1,w_2,\cdots,w_m)$ 最大。
+
+### Autoregressive Language Model
+
+自回归模型即在给定之前的所有token, 输出下一个token是什么(指利用上文信息或者下文信息), 是单向的。给定源语句 $(x_1, \cdots, x_m)$ , 目标语句 $(y_1, \cdots, y_n)$ 是按照如下的方式生成的:
+
+$$p(y|x) = \prod_{t}{p(y_t|y_{\lt t},x)}$$
+
+$t$ 是当前的时刻,  $y_{\lt t}$ 是当前时刻已经生成的token, 由于前后的依赖关系, AR模型的生成往往需要 $O(n)$ 次循环。AR模型适合用于自然语言生成(NLG)任务。GPT是典型的自回归模型, 缺点是生成速度慢, non-autoregressive模型就是想要减少生成时的循环次数。
+
+### Autoencoding Language Model
+
+自编码模型是把输入token打乱, 学习出一个中间表示(隐空间), 再用这个中间表示还原出原始的序列。BERT作为典型的AE模型就是通过mask掉一部分token, 再重建恢复原始序列。AE模型能较好地编码上下文信息, 因此擅长自然语言理解(NLU)的任务。
 
 ## RNN
 
