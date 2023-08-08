@@ -13,6 +13,10 @@
     - [list](#list)
   - [numpy](#numpy)
   - [pytorch](#pytorch)
+    - [常用函数](#常用函数)
+    - [DDP训练](#ddp训练)
+    - [microbatch 训练](#microbatch-训练)
+    - [all\_gather 函数](#all_gather-函数)
   - [Matplotlib](#matplotlib)
   - [Faker](#faker)
   - [FAISS](#faiss)
@@ -294,16 +298,95 @@ def get_topk(query, dataset, k):
 
 ## pytorch
 
+### 常用函数
+
 ```python
-import torch as th
-
 torch.clamp(input, min, max) # 将input中的元素限制在[min, max]之间
-
 
 # 求一个矩阵行与行之间的l2 norm距离, 返回flat之后的三角矩阵
 import torch.nn.functional as F
-x = th.tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]])
+x = torch.tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]])
 F.pdist(x, p=2) # tensor([0., 1., 1.])
+```
+
+### DDP训练
+
+```python
+import torch
+import argparse
+
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+import torch.distributed as dist
+
+# 通用的DDP训练
+parser = argparse.ArgumentParser()
+parser.add_argument("--local_rank", default=0)
+FLAGS = parser.parse_args()
+local_rank = FLAGS.local_rank
+torch.cuda.set_device(local_rank)
+
+dist.init_process_group(backend='nccl')
+
+device = torch.device("cuda", local_rank)
+model = nn.Sequential(...)
+model = model.to(device)
+
+model = DDP(model, device_ids=[local_rank], output_device=local_rank)
+
+dataset = ...
+# DistributedSampler会把数据划分成num_gpu份，保证不同的GPU拿到的数据不同
+train_sampler = DistributedSampler(dataset)
+# 这里的batch_size指的是每个进程下的batch_size。也就是说，总batch_size是这里的batch_size再乘以GPU数(world_size)
+trainloader = DataLoader(my_trainset, batch_size=batch_size, sampler=train_sampler)
+
+for epoch in range(num_epochs):
+    # 设置sampler的epoch，DistributedSampler的种子由epoch决定，这样不同epoch的数据顺序就会不一样
+    trainloader.sampler.set_epoch(epoch)
+    for data in trainloader:
+        prediction = model(data)
+        loss = loss_fn(prediction)
+        loss.backward() #在这一步进行不同进程间的梯度同步
+        optimizer.step()
+        optimizer.zero_grad()
+```
+
+执行：
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1 python -u -m torch.distributed.launch --nproc_per_node=2 test.py
+```
+
+### microbatch 训练
+
+```python
+# 使用microbatch是为了减少显存占用的情况下使用大batch训练
+for data in trainloader:
+    optimizer.zero_grad()
+    # 前accumulation_step-1个step，不进行梯度同步，累积梯度。
+    for i in range(accumulation_step-1):
+        with model.no_sync():   # 声明不进行进程间的梯度同步，从而加快训练速度
+            prediction = model(data[i*(bsz//accumulation_step):(i+1)*(bsz//accumulation_step)])
+            loss = loss_fn(prediction)
+            loss.backward()     # 求梯度，在zero_grad()之前梯度都不会被清空，因此会逐渐积累
+    # 最后一个microbatch，进行梯度同步
+    prediction = model(data[(accumulation_step-1)*(bsz//accumulation_step):])
+    loss = loss_fn(prediction)
+    loss.backward()     # 在没有no_sync()的情况下，会在此步骤进行梯度同步
+    optimizer.step()    # 更新参数
+```
+
+### all\_gather 函数
+
+```python
+# 如果需要使用全部进程计算的结果来生成loss，例如contrastive loss，则需要使用all_gather()函数
+x = model(data)
+all_x = [torch.zeros_like(x) for _ in range(dist.get_world_size())]
+dist.all_gather(all_x, x)               #这一步之后，all_x中包含了所有进程的x，但是不包含梯度
+all_x[dist.get_rank()] = x              #生成梯度
+all_x = torch.cat(all_x, dim=0)         #将所有进程的x拼接起来
+loss = loss_fn(all_x)                   #计算loss
 ```
 
 ## Matplotlib
