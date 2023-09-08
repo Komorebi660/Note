@@ -33,6 +33,22 @@ FILE=文件名
 find ${PATH} -name ${FILE} -exec rm -f {} \;
 ```
 
+## 获取文件行数
+
+```bash
+wc -l 1.txt
+```
+
+## 文件合并
+
+```
+# 将1.txt和2.txt合并到3.txt
+cat 1.txt 2.txt > 3.txt
+
+# 将2.txt追加到1.txt中
+cat 2.txt >> 1.txt
+```
+
 ## 查询系统版本以及硬件信息
 
 ```bash
