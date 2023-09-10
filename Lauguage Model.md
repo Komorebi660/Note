@@ -16,6 +16,8 @@
     - [Self-Attention](#self-attention)
     - [Encoder](#encoder)
     - [Decoder](#decoder)
+  - [GPT](#gpt)
+  - [BERT](#bert)
   - [LoRA](#lora)
   - [Vision Transformer](#vision-transformer)
   - [Reference](#reference)
@@ -33,7 +35,7 @@ There is a cat on the desk.
 
 那么很自然想到, 用*实际翻译结果中出现在参考翻译中的单词数*除以*实际翻译结果单词总数*, 来评估结果的好坏。例如, 若翻译结果为`The cat are on the desk`。则评分为: $5/6$ , 只有`are`没有出现, 这看起来是合理的。但是若翻译结果为`is is is is is is is`, 那么很显然, 评分为 $6/6$ , 因为`is`在参考翻译句子中出现了。很明显, 这这种方案不合理。
 
-错误出现在对单词的计数不合理, 一个解决方法是, 我们规定*实际翻译结果中每个单词的计数*不得超过在*单个参考翻译中出现的最大次数*。在上述`is is is is is is`翻译结果中, 单词`is`在参考翻译中出现的最大次数是 $1$ , 因此, 只能被记 $1$ 次, 评分为 $1/6$ , 这是比较合理的。
+这一错误源自于对单词的计数不合理, 一个解决方法是, 我们规定*实际翻译结果中每个单词的计数*不得超过在*单个参考翻译中出现的最大次数*。在上述`is is is is is is`翻译结果中, 单词`is`在参考翻译中出现的最大次数是 $1$ , 因此, 只能被记 $1$ 次, 评分为 $1/6$ , 这是比较合理的。
 
 另外结果的顺序也需要考虑, 假如实际翻译句子为`desk the on cat a is there`, 那么得分为 $7/7$ , 虽然单词都出现了, 但结果却没有意义。因此, 根据“平滑”的思想, 进一步考虑`1-gram`到`4-gram`。具体来说：我们除了对单个单词计数, 还对2、3、4个单词组成的词组进行计数。 $n = 1,2,3,4$ 时 , 每 $n$ 个单词为一组, 设实际翻译中每个元素为 $x_i^n$ , 则有:
 
@@ -85,7 +87,7 @@ $$P(w_1,w_2,\cdots,w_m)=P(w_1)P(w_2|w_1)P(w_3|w_1,w_2) \cdots P(w_m|w_1,\cdots,w
 
 $$p(y|x) = \prod_{t}{p(y_t|y_{\lt t},x)}$$
 
-$t$ 是当前的时刻,  $y_{\lt t}$ 是当前时刻已经生成的token, 由于前后的依赖关系, AR模型的生成往往需要 $O(n)$ 次循环。AR模型适合用于自然语言生成(NLG)任务。GPT是典型的自回归模型, 缺点是生成速度慢, non-autoregressive模型就是想要减少生成时的循环次数。
+$t$ 是当前的时刻,  $y_{\lt t}$ 是当前时刻已经生成的token, 由于前后的依赖关系, AR模型的生成往往需要 $O(n)$ 次循环。AR模型适合用于自然语言生成(NLG)任务。GPT是典型的自回归模型, 缺点是生成速度慢, 生成长度为N的序列需要进行N次推理。
 
 ### Autoencoding Language Model
 
@@ -217,7 +219,7 @@ Self-Attention 的计算过程如下:
 </div>
 </br>
 
-- 首先将输入的词向量 $X$ 通过线性变换得到 $Q, K, V$ 三个矩阵(`Query`, `Key`, `Value`)。实际使用中线性变换后的矩阵会保持维度与 $X$ 相同，而不是像图中展示的那样。
+- 首先将输入的词向量 $X$ 通过线性变换得到 $Q, K, V$ 三个矩阵(`Query`, `Key`, `Value`)。实际使用中线性变换后的矩阵会保持维度与 $X$ 相同，而不是像图中展示的那样，这样就能保证每一个transformer块的输入输出维度一致。
 
 $$Q=W_Q \times X$$
 
@@ -233,6 +235,8 @@ $$Score(Q,K) = softmax \left( \frac{Q \times K^T}{\sqrt{d_k}} \right)$$
 
 $$Attention(Q,K,V) = Score(Q,K) \times V$$
 
+Self-attention 机制可以理解为通过 $Q, K$ 计算每个词和其他词的相似度，得到相关性矩阵 $Score$ , 再用 $Score$ 去加权变换后的词向量 $V$ ，这样我们就把每个词和其上下文信息关联了起来。
+
 Multi-Head Attention 是由多个 Self-Attention 组合形成的, 首先将输入 $X$ 分别传递到 $h$ 个不同的 Self-Attention 中，计算得到 $h$ 个输出矩阵 $Z_1, \cdots, Z_h$ , 接着将它们拼接(Concat)在一起, 然后通过一个Linear层, 得到和输入维度相同的最终的输出 $Z$ , 计算公式如下:
 
 $$Z = W_Z \times [Z_1, \cdots, Z_h]^T$$
@@ -246,6 +250,8 @@ $$Y = LayerNorm(X + \mathbf{MultiHeadAttention}(X))$$
 $$Z = LayerNorm(Y + \underbrace{\max (0, YW_1+b_1)W_2+b_2}_{\mathbf{FeedForward}(Y)})$$
 
 其中Feed Forward Net是两个全连接层, 第一层激活函数为Relu, 第二层没有激活函数。
+
+由于Encoder中的Attention模块计算了每个词和整个句子的关联性，因此也被称为双向Transformer模块，BERT使用的就是这种结构。
 
 ### Decoder
 
@@ -271,6 +277,41 @@ $$X_2 = LayerNorm(X_1 + \mathbf{MaskMultiHeadAttention}(X_1))$$
 $$Y = LayerNorm(X_2 + \mathbf{MultiHeadAttention}(C, X_2))$$
 
 $$Z = LayerNorm(Y + \mathbf{FeedForward}(Y))$$
+
+由于Decoder中的Attention模块含有Mask，也就是当前词只能“看到”它之前的信息，因此也被称为单向Transformer模块，GPT使用的就是这种结构。
+
+## GPT
+
+GPT基于Transformer的**Decoder**结构，去除了其中的一个MultiHeadAttention模块，如下图所示：
+
+<div align=center>
+<img src="./figs/GPT_architecture.png" width=40%/>
+</div>
+</br>
+
+由于GPT中的Attention带有Mask操作，因此它是**单向**的，也即每个词只能利用上文的信息(**自回归模型**)，所以GPT天然适合于自然语言生成(NLG)任务。
+
+GPT的训练过程如下: 将整个句子(包含n个词)的词向量(第一个为`<SOS>`特殊字符)加上位置编码后输入到单向Encoder中，模型的n个输出分别预测该位置的下一个词，其中，`<SOS>`预测句子中的第一个词，最后一个词的预测结果不用于模型的训练(在GPT-1中用于fine-tune下游任务)。
+
+从GPT-2开始，OpenAI开始探索这种架构的文本生成能力。GPT-2的训练过程与GPT-1类似。在推理时，GPT-2每预测一个词，就会把这个词加入到输入序列中，再送入到模型，生成下一个词，重复上述过程，直到遇到`<EOS>`特殊字符或者达到最大长度。因此生成一个长度为N的句子需要做N次推理。
+
+## BERT
+
+BERT基于Transformer的**Encoder**结构，由于不带Mask，因此它是**双向**的，也即每个词可以利用上下文的信息(**自编码模型**)，所以BERT天然适合于自然语言理解(NLU)任务。
+
+由于BERT是双向Transformer，就无法再像GPT一样采用正常的语言模型来预训练了，因为BERT的结构导致Transformer的每个输出都可以看见整个句子，无论你用这个输出去预测什么，都会“看见”参考答案。因此，BERT选择了不同的预训练方法:
+
+- Masked Language Model (MLM)
+  BERT在输入的句子中，挖掉一些需要预测的词，然后通过上下文来分析句子，最终使用其相应位置的输出来预测被挖掉的词。可认为是在做完形填空。
+- Next Sentence Prediction (NSP)
+  往Transformer中输入连续的两个句子，左边的句子前面加上一个`<CLS>`标签，它的输出被用来判断两个句子之间是否是连续的上下文关系。同时为了区分两个句子，还加入了一个需要学习的Segment Embedding。
+
+<div align=center>
+<img src="./figs/BERT_train.png" width=60%/>
+</div>
+</br>
+
+BERT利用了上下文信息，因此擅长文本理解任务，如[文本分类](https://www.ylkz.life/deeplearning/p10979382/)、[问答选择](https://www.ylkz.life/deeplearning/p10700486/)、[问题回答](https://www.ylkz.life/deeplearning/p10265968/)。但不同于GPT，BERT的结构天然无法胜任文本生成的任务，因为BERT需要知道上下文信息，但是生成的过程中，下文信息是未知的。
 
 ## LoRA
 
@@ -311,5 +352,6 @@ $$h = (W + B \times A)x $$
 - [Seq2Seq 模型详解](https://www.jianshu.com/p/80436483b13b)
 - [Attention 图解](https://zhuanlan.zhihu.com/p/342235515)
 - [Transformer 模型详解](https://zhuanlan.zhihu.com/p/48508221)
+- [GPT & BERT](https://zhuanlan.zhihu.com/p/69290203)
 - [LoRa 简读](https://zhuanlan.zhihu.com/p/514033873)
 - [Vision Transformer](https://zhuanlan.zhihu.com/p/317756159)
