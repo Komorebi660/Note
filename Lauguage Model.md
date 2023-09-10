@@ -285,7 +285,7 @@ $$Z = LayerNorm(Y + \mathbf{FeedForward}(Y))$$
 GPT基于Transformer的**Decoder**结构，去除了其中的一个MultiHeadAttention模块，如下图所示：
 
 <div align=center>
-<img src="./figs/GPT_architecture.png" width=40%/>
+<img src="./figs/GPT_architecture.png" width=20%/>
 </div>
 </br>
 
@@ -307,7 +307,7 @@ BERT基于Transformer的**Encoder**结构，由于不带Mask，因此它是**双
   往Transformer中输入连续的两个句子，左边的句子前面加上一个`<CLS>`标签，它的输出被用来判断两个句子之间是否是连续的上下文关系。同时为了区分两个句子，还加入了一个需要学习的Segment Embedding。
 
 <div align=center>
-<img src="./figs/BERT_train.png" width=60%/>
+<img src="./figs/BERT_train.png" width=50%/>
 </div>
 </br>
 
