@@ -534,6 +534,19 @@ def build_index(data):
     index_cpu = faiss.index_gpu_to_cpu(index)
     faiss.write_index(index_cpu, 'index_xxx')
 
+
+def build_index_with_ids(data, ids):
+    data_num, data_dim = data.shape
+
+    index = faiss.IndexFlatL2(data_dim)
+    index = faiss.IndexIDMap(index)
+
+    index.add_with_ids(data, ids)
+    assert index.ntotal == data_num
+
+    return index
+
+
 def search(query):
     query_num, query_dim = data.shape
 
