@@ -14,6 +14,7 @@
   - [numpy](#numpy)
   - [pytorch](#pytorch)
     - [常用函数](#常用函数)
+    - [Dataset \& DataLoader](#dataset--dataloader)
     - [DDP训练](#ddp训练)
     - [microbatch 训练](#microbatch-训练)
     - [all\_gather 函数](#all_gather-函数)
@@ -307,6 +308,53 @@ torch.clamp(input, min, max) # 将input中的元素限制在[min, max]之间
 import torch.nn.functional as F
 x = torch.tensor([[1, 1, 1], [1, 1, 1], [2, 2, 2]])
 F.pdist(x, p=2) # tensor([0., 1., 1.])
+```
+
+### Dataset & DataLoader
+
+```python
+from torch.utils.data import DataLoader, Dataset
+
+# customize dataset
+class MyDataset(Dataset):
+    def __init__(self, datasets):
+        super().__init__()
+        self.datasets = datasets
+        self.length = len(self.datasets)
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        with torch.no_grad():
+            return self.datasets[idx]
+
+dataset = MyDataset(...)
+
+data_loader = DataLoader(
+    dataset,
+    batch_size=batch_size,
+    shuffle=True,   # 是否打乱数据
+    num_workers=0,  # 单进程读取数据
+)
+
+# one epoch
+for data in data_loader:
+    ...
+
+# multi epoch
+for epoch in range(num_epochs):
+    for data in data_loader:
+        ...
+
+# infinite
+def infinite_loader(loader):
+    while True:
+        yeild from loader
+infinite_data_loader = infinite_loader(data_loader)
+for i in range(num_training_steps):
+    data = next(infinite_data_loader)
+    ...
 ```
 
 ### DDP训练
