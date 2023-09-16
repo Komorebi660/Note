@@ -3,6 +3,7 @@
 - [Usage of Python](#usage-of-python)
   - [data load \& store](#data-load--store)
     - [`.txt`](#txt)
+    - [`.json`](#json)
     - [`.tsv`](#tsv)
     - [`.pt`](#pt)
     - [`.bin`](#bin)
@@ -41,6 +42,28 @@ with open("xxx.txt", "r", encoding="utf8") as f:
 
 with open("xxx.txt", "r", encoding="utf8") as f:
     f.readlines() # ['xxx\n', '123\n']
+```
+
+### `.json`
+
+```python
+import json
+
+d = {"a": [1,2,3], "b" : {"c": 1, "d": 2}}  # dict
+
+# dict to str
+d_str = json.dumps(d, indent=1) # indent=1用于格式化
+
+# str to dict
+d_dict = json.loads(d_str)
+
+# dict to file
+with open("test.json", "w", newline="\n") as f:
+    json.dump(d, f, indent=1)
+
+# file to dict
+with open("test.json", "r") as f:
+    d_dict = json.load(f)
 ```
 
 ### `.tsv`
@@ -107,7 +130,7 @@ with open("xxx.bin", 'wb') as f:
 with open("xxx.bin", 'rb') as f:
     # struct.unpack(format, buffer)
     i = struct.unpack("i", f.read(4))[0]
-    _list = struct.unpack("%sf" % i, f.read(4 * i))[0]
+    data = struct.unpack("%sf" % i, f.read(4 * i))[0]
 ```
 
 ## yeild
