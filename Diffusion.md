@@ -169,11 +169,11 @@ x0 = get_data()
 epsilon = torch.randn_like(x0.shape)
 t = torch.randint()
 
-x = x0 * torch.sqrt(alpha_bar[t]) + epsilon * torch.sqrt(1 - alpha_bar[t])
+x_t = x0 * torch.sqrt(alpha_bar[t]) + epsilon * torch.sqrt(1 - alpha_bar[t])
 
-output = model(x)
+output = model(x_t, t)
 
-loss = torch.norm(e - output)**2
+loss = torch.norm(epsilon - output)**2
 
 loss.backward()
 ```
