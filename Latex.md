@@ -3,9 +3,9 @@
 - [Latex Grammer](#latex-grammer)
   - [Mathematical Symble](#mathematical-symble)
   - [Title \& Packages](#title--packages)
-    - [Sections](#sections)
-    - [Enumerate](#enumerate)
-    - [Table](#table)
+  - [Sections](#sections)
+  - [Enumerate](#enumerate)
+  - [Table](#table)
   - [Figure](#figure)
   - [Algorithm](#algorithm)
   - [Equation](#equation)
@@ -62,6 +62,7 @@
 \usepackage{indentfirst}
 \usepackage{multirow}
 \usepackage{threeparttable}
+\usepackage{booktabs}
 \usepackage{geometry}
 \usepackage{algorithm}
 \usepackage{algorithmicx}
@@ -142,14 +143,18 @@
 
 ...
 
+% method 1
 \begin{thebibliography}{99}
   \bibitem{ref1} 
 \end{thebibliography}
+% method 2
+\bibliographystyle{plain}
+\bibliography{ref}  % add a ref.bib file
 
 \end{document}
 ```
 
-### Sections
+## Sections
 
 ```latex
 \section{}
@@ -157,7 +162,7 @@
 \subsubsection{}
 ```
 
-### Enumerate
+## Enumerate
 
 ```latex
 \begin{enumerate}
@@ -169,19 +174,19 @@
 \end{itemize}
 ```
 
-### Table
+## Table
 
 ```latex
 \begin{table}[H]
   \centering
   \caption{}
   \begin{threeparttable}
-    \begin{tabular}{|l||c|c|c|c|}
-      \hline
+    \begin{tabular}{l||cccc}
+      \toprule[2pt]
        &  &  &  &  \\
-      \hline
+      \midrule[1pt]
       &  &  &  &  \\
-      \hline
+      \bottomrule[2pt]
     \end{tabular}
     \begin{tablenotes}
       \footnotesize
@@ -225,7 +230,7 @@
 ```latex
 \begin{equation}
   \begin{aligned}
-    &\\
+    & \\
     &
   \end{aligned}
   \label{}
