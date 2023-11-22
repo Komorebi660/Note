@@ -84,8 +84,8 @@
             citecolor=blue]{hyperref}
 \usepackage{caption}
 \usepackage{libertine}
-\captionsetup[figure]{font=small, labelfont={bf,it}}
-\captionsetup[table]{font=small, labelfont={bf,it}}
+\captionsetup[figure]{font=small, labelfont={bf,it}, name={图}}
+\captionsetup[table]{font=small, labelfont={bf,it}, name={表}}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
