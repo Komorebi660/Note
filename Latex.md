@@ -209,6 +209,14 @@
   \caption{}
   \label{}
 \end{figure}
+
+% 占用双栏
+\begin{figure*}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{}
+  \caption{}
+  \label{}
+\end{figure*}
 ```
 
 ## Algorithm
