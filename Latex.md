@@ -77,6 +77,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{subfigure}
+\usepackage{subcaption}
 \usepackage{wrapfig}
 \usepackage[colorlinks,
             linkcolor=blue,
@@ -200,14 +201,26 @@
 ## Figure
 
 ```latex
-\begin{figure}[H]
-  \centering
-  \subfigure[]{
-    \includegraphics[width=0.48\textwidth]{}}
-  \subfigure[]{
-    \includegraphics[width=0.48\textwidth]{}}
-  \caption{}
-  \label{}
+%上下并排放置两张图片
+\begin{figure}
+  \begin{subfigure}{\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figure1}
+    \caption{Caption for Figure 1}
+    \label{fig:figure1}
+  \end{subfigure}
+
+  \bigskip
+
+  \begin{subfigure}{\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{figure2}
+    \caption{Caption for Figure 2}
+    \label{fig:figure2}
+  \end{subfigure}
+
+  \caption{Two figures placed vertically}
+  \label{fig:combined}
 \end{figure}
 
 % 占用双栏
