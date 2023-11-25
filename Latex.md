@@ -76,7 +76,6 @@
 \lstset{basicstyle=\ttfamily}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{subfigure}
 \usepackage{subcaption}
 \usepackage{wrapfig}
 \usepackage[colorlinks,
