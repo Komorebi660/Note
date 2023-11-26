@@ -170,7 +170,7 @@
 \end{enumerate}
 
 \begin{itemize}
-  \item
+  \item[a)]
 \end{itemize}
 ```
 
@@ -181,7 +181,7 @@
   \centering
   \caption{}
   \begin{threeparttable}
-    \begin{tabular}{l||cccc}
+    \begin{tabular}{l|cccc}
       \toprule[2pt]
        &  &  &  &  \\
       \midrule[1pt]
@@ -201,7 +201,7 @@
 
 ```latex
 %上下并排放置两张图片
-\begin{figure}
+\begin{figure}[htbp]
   \begin{subfigure}{\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{figure1}
