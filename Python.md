@@ -492,6 +492,10 @@ linestyle: 线型
 marker: 标记样式
 label: 图例
 """
+# 曲线上添加数据点的值
+for i, txt in enumerate(y):
+    plt.annotate(f'{y[i]:.4f}', (x[i], y[i]), fontsize=10, textcoords="offset points", xytext=(0,-20), ha='center')
+
 
 #画散点
 plt.scatter(x, y, color='red', marker='o', label='label2', s=10, alpha=0.6)
