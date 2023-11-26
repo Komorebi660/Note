@@ -5,7 +5,7 @@
   - [特征工程](#特征工程)
   - [模型选择](#模型选择)
 
-首先安装依赖：
+安装依赖：
 ```bash
 pip install numpy matplotlib pandas seaborn sklearn gplearn xgboost pydotplus
 ```
@@ -86,7 +86,7 @@ def draw_neighbor(data):
     plt.savefig('neighbor.png')    
 ```
 
-树分类器特征重要性和树结构可视化：
+树分类器的特征重要性和树结构可视化：
 ```python
 from xgboost import plot_tree, plot_importance
 
@@ -111,7 +111,7 @@ def _plot_importance(classifier):
 def _plot_tree(classifier, i):
     plot_tree(classifier, num_trees=i-1)    # 画出第i棵树
     fig = plt.gcf()
-    fig.set_size_inches(50, 6)
+    fig.set_size_inches(50, 6)  # 图片大小, 清晰度
     plt.tight_layout()
     plt.savefig(f'tree_{i}.png')
     plt.clf()
