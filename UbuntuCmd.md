@@ -8,6 +8,7 @@
   - [for循环命令](#for循环命令)
   - [查询系统版本以及硬件信息](#查询系统版本以及硬件信息)
   - [进程管理](#进程管理)
+  - [文件校验](#文件校验)
   - [压缩](#压缩)
   - [Vim](#vim)
   - [Git](#git)
@@ -101,10 +102,19 @@ ps -ef | grep process_name
 kill -s 9 pid
 ```
 
+## 文件校验
+
+```bash
+# MD5
+md5sum xxx
+
+# SHA256
+sha256sum xxx
+```
+
 ## 压缩
 
 ```bash
-
 # 仅打包
 tar -cvf xxx.tar xxx      # 打包
 tar -xvf xxx.tar          # 解包
@@ -112,6 +122,14 @@ tar -xvf xxx.tar          # 解包
 # 打包并压缩
 tar -zcvf xxx.tar.gz xxx  # 打包
 tar -zxvf xxx.tar.gz      # 解包
+
+# .gz
+gzip -d xxx.gz            # 解压
+gzip xxx                  # 压缩
+
+# .zip
+unzip xxx.zip             # 解压
+zip -r xxx.zip xxx        # 压缩
 ```
 
 ## Vim
