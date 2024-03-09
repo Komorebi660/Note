@@ -3,8 +3,10 @@
 - [Latex Grammer](#latex-grammer)
   - [Mathematical Symble](#mathematical-symble)
   - [Title \& Packages](#title--packages)
+  - [Footnote](#footnote)
   - [Sections](#sections)
   - [Enumerate](#enumerate)
+  - [listings](#listings)
   - [Table](#table)
   - [Figure](#figure)
   - [Algorithm](#algorithm)
@@ -55,7 +57,6 @@
 | `\ll` | $\ll$ |
 
 ## Title & Packages
-
 ```latex
 \documentclass[12pt]{article}
 \usepackage[UTF8, scheme = plain]{ctex}
@@ -87,51 +88,6 @@
 \captionsetup[figure]{font=small, labelfont={bf,it}, name={图}}
 \captionsetup[table]{font=small, labelfont={bf,it}, name={表}}
 
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-
-\lstset{frame=tb,
-  language=C++,
-  aboveskip=3mm,
-  belowskip=3mm,
-  showstringspaces=false,
-  columns=flexible,
-  basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{dkgreen},
-  keywordstyle=\color{blue},
-  commentstyle=\color{gray},
-  stringstyle=\color{mauve},
-  breaklines=true,
-  breakatwhitespace=true,
-  tabsize=3
-}
-
-\renewcommand{\algorithmicrequire}{\textbf{Input:}}
-\renewcommand{\algorithmicensure}{\textbf{Output:}}
-
-\makeatletter
-\newenvironment{breakablealgorithm}
-  {% \begin{breakablealgorithm}
-   \begin{center}
-     \refstepcounter{algorithm}% New algorithm
-     \hrule height.8pt depth0pt \kern2pt% \@fs@pre for \@fs@ruled
-     \renewcommand{\caption}[2][\relax]{% Make a new \caption
-       {\raggedright\textbf{\ALG@name~\thealgorithm} ##2\par}%
-       \ifx\relax##1\relax % #1 is \relax
-         \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##2}%
-       \else % #1 is not \relax
-         \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##1}%
-       \fi
-       \kern2pt\hrule\kern2pt
-     }
-  }{% \end{breakablealgorithm}
-     \kern2pt\hrule\relax% \@fs@post for \@fs@ruled
-   \end{center}
-  }
-\makeatother
-
 \setcounter{secnumdepth}{4}
 \setlength{\parskip}{0.5em}
 \geometry{a4paper,scale=0.85}  
@@ -154,8 +110,15 @@
 \end{document}
 ```
 
-## Sections
+## Footnote
+```latex
+....\footnotemark[1]....
 
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\footnotetext[1]{......}
+```
+
+## Sections
 ```latex
 \section{}
 \subsection{}
@@ -163,19 +126,45 @@
 ```
 
 ## Enumerate
-
 ```latex
-\begin{enumerate}
+\begin{enumerate}[leftmargin=*]
   \item
 \end{enumerate}
 
-\begin{itemize}
+\begin{itemize}[leftmargin=*]
   \item[a)]
 \end{itemize}
 ```
 
-## Table
+## listings
+```latex
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
 
+\lstset{frame=tb,
+  language=C++,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{dkgreen},
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\begin{lstlisting}
+  ...
+\end{lstlisting}
+```
+
+## Table
 ```latex
 \begin{table}[H]
   \centering
@@ -195,10 +184,35 @@
   \end{threeparttable}
   \label{}
 \end{table}
+
+
+%table notes without threeparttable
+\begin{table}[H]
+  \centering
+  \caption{}
+  \resizebox{\linewidth}{!}{  % resize table
+    \begin{tabular}{l|cccc}
+      \toprule[2pt]
+       &  &  &  &  \\
+      \midrule[1pt]
+      &  &  &  &  \\
+      \bottomrule[2pt]
+    \end{tabular}
+  }
+  \noindent
+  \begin{minipage}{\linewidth}
+    \hspace{0.1cm}
+    \vspace{-0.1cm}
+    \scriptsize
+    \begin{itemize}[leftmargin=*]
+      \item[1] 
+    \end{itemize}
+  \end{minipage}
+  \label{}
+\end{table}
 ```
 
 ## Figure
-
 ```latex
 %上下并排放置两张图片
 \begin{figure}[htbp]
@@ -232,9 +246,32 @@
 ```
 
 ## Algorithm
-
 ```latex
-\begin{algorithm}[H]
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\makeatletter
+\newenvironment{breakablealgorithm}
+  {% \begin{breakablealgorithm}
+   \begin{center}
+     \refstepcounter{algorithm}% New algorithm
+     \hrule height.8pt depth0pt \kern2pt% \@fs@pre for \@fs@ruled
+     \renewcommand{\caption}[2][\relax]{% Make a new \caption
+       {\raggedright\textbf{\ALG@name~\thealgorithm} ##2\par}%
+       \ifx\relax##1\relax % #1 is \relax
+         \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##2}%
+       \else % #1 is not \relax
+         \addcontentsline{loa}{algorithm}{\protect\numberline{\thealgorithm}##1}%
+       \fi
+       \kern2pt\hrule\kern2pt
+     }
+  }{% \end{breakablealgorithm}
+     \kern2pt\hrule\relax% \@fs@post for \@fs@ruled
+   \end{center}
+  }
+\makeatother
+
+\begin{breakablealgorithm}[H]
   \caption{}
   \label{}
   \begin{algorithmic}[1]
@@ -242,11 +279,10 @@
     \Ensure
     \State 
   \end{algorithmic}
-\end{algorithm}
+\end{breakablealgorithm}
 ```
 
 ## Equation
-
 ```latex
 \begin{equation}
   \begin{aligned}
