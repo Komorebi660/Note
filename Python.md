@@ -12,16 +12,19 @@
     - [dict](#dict)
     - [set](#set)
     - [list](#list)
+  - [argparse](#argparse)
   - [numpy](#numpy)
   - [pytorch](#pytorch)
     - [常用函数](#常用函数)
     - [Dataset \& DataLoader](#dataset--dataloader)
     - [DDP训练](#ddp训练)
+    - [DDP推理](#ddp推理)
     - [microbatch 训练](#microbatch-训练)
     - [all\_gather 函数](#all_gather-函数)
   - [Matplotlib](#matplotlib)
   - [Faker](#faker)
   - [FAISS](#faiss)
+  - [Huggingface transformers](#huggingface-transformers)
 
 ## data load & store
 
@@ -238,6 +241,19 @@ a.sort(key=lambda x: x[1])               # [[3, 1], [2, 2], [1, 3]]
 a.sort(key=lambda x: x[1], reverse=True) # [[1, 3], [2, 2], [3, 1]]
 ```
 
+## argparse
+
+```python
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", type=str, default='llama', choices=['llama', 'gpt'], help="model name")
+args = parser.parse_args()
+
+# usage
+args.model
+```
+
 ## numpy
 
 ```python
@@ -382,6 +398,8 @@ for i in range(num_training_steps):
 
 ### DDP训练
 
+注意，使用DDP训练时，每张卡上必须有完整的模型，不支持张量并行。
+
 ```python
 import torch
 import argparse
@@ -396,27 +414,26 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--local_rank", default=0)
 FLAGS = parser.parse_args()
 local_rank = FLAGS.local_rank
-torch.cuda.set_device(local_rank)
 
 dist.init_process_group(backend='nccl')
+device = torch.device(f'cuda:{local_rank}')
 
-device = torch.device("cuda", local_rank)
 model = nn.Sequential(...)
 model = model.to(device)
 
-model = DDP(model, device_ids=[local_rank], output_device=local_rank)
+model = DDP(model, device_ids=[device], output_device=device)
 
-dataset = ...
+train_dataset = ...
 # DistributedSampler会把数据划分成num_gpu份，保证不同的GPU拿到的数据不同
-train_sampler = DistributedSampler(dataset)
+train_sampler = DistributedSampler(train_dataset)
 # 这里的batch_size指的是每个进程下的batch_size。也就是说，总batch_size是这里的batch_size再乘以GPU数(world_size)
-trainloader = DataLoader(my_trainset, batch_size=batch_size, sampler=train_sampler)
+trainloader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler)
 
 for epoch in range(num_epochs):
     # 设置sampler的epoch，DistributedSampler的种子由epoch决定，这样不同epoch的数据顺序就会不一样
     trainloader.sampler.set_epoch(epoch)
     for data in trainloader:
-        prediction = model(data)
+        prediction = model(data.to(device))
         loss = loss_fn(prediction)
         loss.backward() #在这一步进行不同进程间的梯度同步
         optimizer.step()
@@ -424,7 +441,118 @@ for epoch in range(num_epochs):
 ```
 
 执行：
+```bash
+CUDA_VISIBLE_DEVICES=0,1 python -u -m torch.distributed.launch --nproc_per_node=2 train.py
+```
 
+### DDP推理
+
+`torch.utils.data.distributed.DistributedSampler`帮助我们把数据不重复地分到各个进程上去。但是，其分的方法是：每段连续的N个数据，拆成一个一个，分给N个进程，所以每个进程拿到的数据不是连续的。这样，不利于我们在inference结束的时候将结果合并到一起。因此我们首先需要一个新的Sampler，将数据分给各个进程，但是每个进程拿到的数据是连续的。
+```python
+# from https://github.com/huggingface/transformers/blob/447808c85f0e6d6b0aeeb07214942bf1e578f9d2/src/transformers/trainer_pt_utils.py
+class SequentialDistributedSampler(torch.utils.data.sampler.Sampler):
+    """
+    Distributed Sampler that subsamples indicies sequentially,
+    making it easier to collate all results at the end.
+    Even though we only use this sampler for eval and predict (no training),
+    which means that the model params won't have to be synced (i.e. will not hang
+    for synchronization even if varied number of forward passes), we still add extra
+    samples to the sampler to make it evenly divisible (like in `DistributedSampler`)
+    to make it easy to `gather` or `reduce` resulting tensors at the end of the loop.
+    """
+
+    def __init__(self, dataset, batch_size, rank=None, num_replicas=None):
+        if num_replicas is None:
+            if not torch.distributed.is_available():
+                raise RuntimeError("Requires distributed package to be available")
+            num_replicas = torch.distributed.get_world_size()
+        if rank is None:
+            if not torch.distributed.is_available():
+                raise RuntimeError("Requires distributed package to be available")
+            rank = torch.distributed.get_rank()
+        self.dataset = dataset
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.batch_size = batch_size
+        self.num_samples = int(math.ceil(len(self.dataset) * 1.0 / self.batch_size / self.num_replicas)) * self.batch_size
+        self.total_size = self.num_samples * self.num_replicas
+    
+    def __iter__(self):
+        indices = list(range(len(self.dataset)))
+        # add extra samples to make it evenly divisible
+        indices += [indices[-1]] * (self.total_size - len(indices))
+        # subsample
+        indices = indices[self.rank * self.num_samples : (self.rank + 1) * self.num_samples]
+        return iter(indices)
+
+    def __len__(self):
+        return self.num_samples
+```
+
+除此以外，我们还需要将不同进程输出的结果合并计算指标，这就需要用到all_gather函数：
+```python
+def distributed_concat(tensor, num_total_examples):
+    """
+    合并结果的函数
+    函数的最后会裁剪掉后面额外长度的部分，这是之前的SequentialDistributedSampler为了对齐添加的。
+
+    Args:
+        tensor: torch.Tensor, 本进程的结果，要求在各个进程中的大小是一模一样的
+        num_total_examples: int, 总共的数据量
+    """
+    output_tensors = [tensor.clone() for _ in range(torch.distributed.get_world_size())]
+    torch.distributed.all_gather(output_tensors, tensor)
+    concat = torch.cat(output_tensors, dim=0)
+    # truncate the dummy elements added by SequentialDistributedSampler
+    return concat[:num_total_examples]
+```
+
+有了上面两个函数，我们就能很方便地处理DDP推理的情况了：
+```python
+import torch
+import argparse
+
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+import torch.distributed as dist
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--local_rank", default=0)
+FLAGS = parser.parse_args()
+local_rank = FLAGS.local_rank
+
+dist.init_process_group(backend='nccl')
+device = torch.device(f'cuda:{local_rank}')
+
+model = nn.Sequential(...)
+model.eval()
+model = model.to(device)
+
+model = DDP(model, device_ids=[device], output_device=device)
+
+test_dataset = ...
+# SequentialDistributedSampler会把数据按顺序划分成num_gpu份，保证不同的GPU拿到的数据不同
+# 这里的batch_size指的是每个进程下的batch_size。也就是说，总batch_size是这里的batch_size再乘以GPU数(world_size)
+test_sampler = SequentialDistributedSampler(test_dataset, batch_size=batch_size)
+testloader = DataLoader(test_dataset, batch_size=batch_size, sampler=test_sampler)
+
+local_predictions = []
+local_expects = []
+for batch in testloader:
+    inputs = batch['inputs'].to(device)
+    expects = batch['expects'].to(device)
+    predictions = model(inputs)
+    local_predictions.append(predictions)
+    local_expects.append(expects)
+
+# 合并结果
+full_predictions = distributed_concat(torch.cat(local_predictions, dim=0), len(test_sampler.dataset))
+full_expects = distributed_concat(torch.cat(local_expects, dim=0), len(test_sampler.dataset))
+# 计算指标
+evaluate(full_predictions, full_expects)
+```
+
+执行：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python -u -m torch.distributed.launch --nproc_per_node=2 test.py
 ```
@@ -633,4 +761,66 @@ def search(query):
     for i in range(query_num):
         results = I[i]
         # results[0:99] are top-100 ids
+```
+
+## Huggingface transformers
+
+Install:
+```bash
+pip install transformers
+```
+
+Generation Example:
+```python
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir="./huggingface")
+
+# if cpu/single gpu
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype="auto", cache_dir="./huggingface")
+model = model.to(device)
+# if multi-gpu
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype="auto", device_map="auto", cache_dir="./huggingface")
+
+model.eval()
+
+prompts = ["What's the weather like today?", "How are you?"]
+results = []
+with torch.no_grad():
+    inputs = tokenizer(prompts, padding=True, truncation=True, \
+                       max_length=500, return_tensors="pt")
+    inputs = inputs.to("cuda")
+    # max_new_tokens: 新生成的最大token数
+    outputs = model.generate(**inputs, max_new_tokens=500, \
+                            pad_token_id=tokenizer.eos_token_id, \
+                            num_beams=5, do_sample=True, num_return_sequences=10)   # bsz*10, ～500+500
+    outputs = outputs.view(-1, 10, outputs.shape[-1])   # bsz, 10, ～500+500
+    for prompt, output in zip(prompts, outputs):
+        temp_result = []
+        for o in output:
+            r = tokenizer.decode(o, skip_special_tokens=True)
+            temp_result.append(r[len(prompt):].strip())
+        results.append(temp_result)     # bsz, 10
+```
+
+Use vllm:
+```bash
+pip install vllm
+```
+
+```python
+from vllm import LLM, SamplingParams
+
+# tensor_parallel_size填GPU数量
+model = LLM(model_name, download_dir="./huggingface", trust_remote_code=True, \
+            tensor_parallel_size=4, swap_space=10, seed=100)
+
+results = []
+sampling_params = SamplingParams(n=10, max_tokens=500)  # max_tokens: 新生成的最大token数
+with torch.no_grad():
+    outputs = model.generate(prompts, sampling_params, use_tqdm=False)   # bsz, 10
+    for output in outputs:
+        temp_result = [output.outputs[i].text for i in range(10)]
+        results.append(temp_result)     # bsz, 10
 ```
