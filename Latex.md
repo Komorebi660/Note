@@ -101,7 +101,8 @@
 
 % method 1
 \begin{thebibliography}{99}
-  \bibitem{ref1} 
+  \bibitem{ref1} ...
+  \bibitem{ref2} ...
 \end{thebibliography}
 % method 2
 \bibliographystyle{plain}
@@ -166,10 +167,31 @@
 
 ## Table
 ```latex
-\begin{table}[H]
+%simple table
+\begin{table}[htbp]
+  \centering
+  \caption{}
+  \renewcommand\arraystretch{1.25}
+  \resizebox{\linewidth}{!}{  % resize table
+    \begin{tabular}{l|cccc}
+      \bottomrule[2pt]
+      \multirow{2}{*}{Multirow} & \multicolumn{2}{c|}{Multicolumn1} & \multicolumn{2}{c|}{Multicolumn2}  \\
+      \cline{2-5}
+      ~ & 1.1 & 1.2 & 2.1 & 2.2 \\
+      \hline
+      &  &  &  &  \\
+      \toprule[2pt]
+    \end{tabular}
+  }
+  \label{}
+\end{table}
+
+%table notes with threeparttable
+\begin{table}[htbp]
   \centering
   \caption{}
   \begin{threeparttable}
+  \resizebox{\linewidth}{!}{  % resize table
     \begin{tabular}{l|cccc}
       \toprule[2pt]
        &  &  &  &  \\
@@ -177,6 +199,7 @@
       &  &  &  &  \\
       \bottomrule[2pt]
     \end{tabular}
+  }
     \begin{tablenotes}
       \footnotesize
       \item[1] 
@@ -185,9 +208,8 @@
   \label{}
 \end{table}
 
-
 %table notes without threeparttable
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \caption{}
   \resizebox{\linewidth}{!}{  % resize table
@@ -236,7 +258,7 @@
   \label{fig:combined}
 \end{figure}
 
-% 占用双栏
+%占用双栏
 \begin{figure*}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{}
@@ -271,7 +293,7 @@
   }
 \makeatother
 
-\begin{breakablealgorithm}[H]
+\begin{breakablealgorithm}[htbp]
   \caption{}
   \label{}
   \begin{algorithmic}[1]
