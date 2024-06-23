@@ -61,6 +61,7 @@
 \documentclass[12pt]{article}
 \usepackage[UTF8, scheme = plain]{ctex}
 \usepackage{indentfirst}
+\usepackage{enumitem}
 \usepackage{multirow}
 \usepackage{threeparttable}
 \usepackage{booktabs}
