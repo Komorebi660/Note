@@ -62,20 +62,12 @@
 \usepackage[UTF8, scheme = plain]{ctex}
 \usepackage{indentfirst}
 \usepackage{enumitem}
-\usepackage{multirow}
-\usepackage{threeparttable}
-\usepackage{booktabs}
 \usepackage{geometry}
-\usepackage{algorithm}
-\usepackage{algorithmicx}
-\usepackage{algpseudocode}
 \usepackage{tikz}
 \usepackage{verbatim}
 \usepackage{amsmath, bm}
 \usepackage{mathrsfs}
 \usepackage{amssymb}
-\usepackage{listings}
-\lstset{basicstyle=\ttfamily}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{subcaption}
@@ -85,13 +77,12 @@
             anchorcolor=blue,
             citecolor=blue]{hyperref}
 \usepackage{caption}
-\usepackage{libertine}
 \captionsetup[figure]{font=small, labelfont={bf,it}, name={图}}
 \captionsetup[table]{font=small, labelfont={bf,it}, name={表}}
 
 \setcounter{secnumdepth}{4}
-\setlength{\parskip}{0.5em}
-\geometry{a4paper,scale=0.85}  
+\setlength{\parskip}{0.3em}
+\geometry{a4paper,scale=0.8}  
 \title{\textbf{}} 
 \author{}  
 \date{}
@@ -100,6 +91,7 @@
 
 ...
 
+% reference
 % method 1
 \begin{thebibliography}{99}
   \bibitem{ref1} ...
@@ -140,34 +132,45 @@
 
 ## listings
 ```latex
-\definecolor{dkgreen}{rgb}{0,0.6,0}
-\definecolor{gray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
+\usepackage{listings}
 
+\setmonofont{Menlo}[Scale=0.9]
+\definecolor{vscode-keyword}{HTML}{569CD6}
+\definecolor{vscode-string}{HTML}{CE9178}
+\definecolor{vscode-comment}{HTML}{6A9955}
+\definecolor{vscode-bg}{HTML}{F5F5F5}
 \lstset{frame=tb,
-  language=C++,
+  language=python,
   aboveskip=3mm,
   belowskip=3mm,
   showstringspaces=false,
   columns=flexible,
   basicstyle={\small\ttfamily},
-  numbers=none,
-  numberstyle=\tiny\color{dkgreen},
-  keywordstyle=\color{blue},
-  commentstyle=\color{gray},
-  stringstyle=\color{mauve},
+  numbers=left,
+  numbersep=1pt,
+  keywordstyle=\color{vscode-keyword}\bfseries,
+  commentstyle=\color{vscode-comment}\itshape,
+  stringstyle=\color{vscode-string},
+  numberstyle=\tiny\color{vscode-comment},
+  backgroundcolor=\color{vscode-bg},
   breaklines=true,
   breakatwhitespace=true,
-  tabsize=3
+  tabsize=4
 }
+\renewcommand{\lstlistingname}{Code}
+\captionsetup[lstlisting]{labelfont=bf}
 
-\begin{lstlisting}
+\begin{lstlisting}[language=Python, caption={xxx}, label={lst:xxx}]
   ...
 \end{lstlisting}
 ```
 
 ## Table
 ```latex
+\usepackage{multirow}
+\usepackage{threeparttable}
+\usepackage{booktabs}
+
 %simple table
 \begin{table}[htbp]
   \centering
@@ -270,6 +273,10 @@
 
 ## Algorithm
 ```latex
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+
 \renewcommand{\algorithmicrequire}{\textbf{Input:}}
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 
@@ -315,3 +322,4 @@
   \label{}
 \end{equation}
 ```
+
